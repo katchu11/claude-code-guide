@@ -207,7 +207,7 @@ graph TD
     A[Session Start] --> B[Duration Tracking]
     B --> C{< 5 minutes}
     B --> D{5-30 minutes}
-    B --> E{> 30 minutes}
+    B --> E{\> 30 minutes}
     C --> F[Quick Questions/Fixes]
     D --> G[Feature Development]
     E --> H[Deep Work Sessions]
