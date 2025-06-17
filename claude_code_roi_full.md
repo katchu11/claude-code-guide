@@ -250,7 +250,6 @@ The most compelling productivity story comes from systematic before/after compar
 - Track existing development metrics from your Git/PM tools
 - Establish statistical baselines with confidence intervals
 - Document current development workflows and pain points
-- Measure sample sizes: Minimum 20 PRs per developer for statistical significance
 
 **Phase 2: Implementation Period**
 - Deploy Claude Code with telemetry enabled
