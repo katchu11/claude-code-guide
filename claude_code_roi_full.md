@@ -160,13 +160,7 @@ The `claude_code.token.usage` metric breaks down by:
 
 **API Users (Pay-per-token) - Real Usage Patterns:**
 
-**Complex Development Work** (Opus 4 with "ultrathink"):
-- Architecture reviews, performance analysis, security audits
-- 1,000-5,000 input tokens, 2,000-8,000 output tokens  
-- $0.075-0.34 per complex query
-- Heavy cache usage (39:1 read:creation ratio saves significant cost)
-
-> **Pro tip**: "ultrathink" triggers Claude's maximum thinking budget for complex analysis. The hierarchy is: "think" < "think hard" < "think harder" < "ultrathink" - each level gives Claude more computation time for thorough evaluation. See Claude Code's [best practices doc](https://www.anthropic.com/engineering/claude-code-best-practices) for more info!
+> **Pro tip**: "ultrathink" triggers Claude's maximum thinking budget for complex analysis. The hierarchy is: "think" < "think hard" < "think harder" < "ultrathink" - each level increases the amount of tokens set to the reasoning budget. See Claude Code's [best practices doc](https://www.anthropic.com/engineering/claude-code-best-practices) for more info!
 
 **Simple Development Tasks** (Haiku):
 - Quick questions, simple functions, code snippets
@@ -196,7 +190,7 @@ The `claude_code.token.usage` metric breaks down by:
 **Note**: Telemetry may require a clean Claude Code installation if you experience hanging. See [troubleshooting.md](troubleshooting.md) for solutions.
 
 ![Grafana Multi-Panel Dashboard](screenshots/graphan_dashboard_cost_tokens_cost_per_user.png)
-*Comprehensive Grafana dashboard showing Claude Code cost by model, cost by user, and token usage metrics across multiple visualization panels* 
+*Grafana dashboard showing Claude Code cost by model, cost by user, and token usage metrics across multiple visualization panels* 
 
 ### Session Duration Analysis
 
@@ -211,18 +205,6 @@ graph TD
     C --> F[Quick Questions/Fixes]
     D --> G[Feature Development]
     E --> H[Deep Work Sessions]
-```
-
-### Monthly Cost Calculation
-
-```mermaid
-graph LR
-    A[Total Tokens] --> B[Input/Output Split]
-    B --> C[Model Pricing]
-    C --> D[Daily Cost]
-    D --> E[Monthly Total]
-    E --> F[Cost per Developer]
-    F --> G[Cost per Feature/PR]
 ```
 
 ## Understanding Developer Productivity Impact
@@ -291,10 +273,7 @@ graph TD
     D --> H[Developer Satisfaction]
 ```
 
-#### Sample Size Guidelines
-- **Individual developer**: 20+ PRs per measurement period
-- **Team analysis**: 5+ active developers, 100+ total PRs
-- **Organizational**: Multiple teams, 500+ PRs for meaningful trends
+Keep in mind, that often it's best to keep it simple!
 
 
 Based on Anthropic's research on [software development impact](https://www.anthropic.com/research/impact-software-development):
@@ -479,7 +458,7 @@ Create a `managed-settings.json` file:
 
 Deploy via your MDM solution or configuration management tool. Users can't disable telemetry, ensuring consistent data collection.
 
-For detailed deployment options, see the [Claude Code deployment documentation](https://docs.anthropic.com/en/docs/claude-code/deployment).
+For detailed deployment options, see the [Claude Code deployment documentation](https://docs.anthropic.com/en/docs/claude-code/third-party-integrations).
 
 ## Conclusion
 
