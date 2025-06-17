@@ -225,11 +225,11 @@ graph LR
     F --> G[Cost per Feature/PR]
 ```
 
-## Understanding the Return
+## Understanding Developer Productivity Impact
 
 Measuring developer productivity isn't straightforward, but Claude Code provides several useful metrics for tracking impact on your development workflows.
 
-### Available Productivity Metrics
+### Core Productivity Metrics
 
 | Metric | What It Measures | Reliability & Interpretation |
 |--------|------------------|------------------------------|
@@ -237,36 +237,81 @@ Measuring developer productivity isn't straightforward, but Claude Code provides
 | `claude_code.commit.count` | Commits made with Claude assistance | **Medium reliability** - Varies by team commit practices; some teams commit frequently, others in large batches |
 | `claude_code.lines_of_code.count` | Code additions/modifications | **Low reliability** - Lines of code can be misleading; refactoring may reduce LOC while improving quality |
 
-**Key insight**: PR count is the most reliable productivity metric as it represents completed, reviewable work units regardless of team practices.
-### Before/After Analysis
+### Additional Available Metrics
 
-The most compelling ROI story comes from before/after comparisons. Track these metrics for 30 days before introducing Claude Code, then compare:
+Claude Code provides these additional telemetry metrics:
+
+| Metric | What It Measures | Use Cases |
+|--------|------------------|-----------|
+| `claude_code.session.count` | Number of CLI sessions started | Track overall tool adoption and usage frequency |
+| `claude_code.code_edit_tool.decision` | Code editing tool permission decisions | Monitor how often developers accept/reject suggested changes |
+| `claude_code.cost.usage` | Cost per session in USD | Budget tracking and cost analysis |
+| `claude_code.token.usage` | Token consumption by type (input/output/cache) | Understand usage patterns and optimize costs |
+
+### Combining Metrics for Insights
+
+While Claude Code provides specific telemetry, you can combine this with your existing development metrics:
+
+- **Session count + PR count**: Measure conversion from Claude sessions to completed work
+- **Token usage patterns + commit frequency**: Understand if high token usage correlates with code quality
+- **Code edit tool decisions**: Track developer confidence in Claude's suggestions
+- **Cost per PR**: Calculate by dividing total costs by PR count over time periods
+
+**Key insight**: The built-in metrics work best when combined with your existing Git and project management data.
+### Before/After Analysis Framework
+
+The most compelling productivity story comes from systematic before/after comparisons. Here's a practical framework:
+
+#### Baseline Establishment (30 days minimum)
+
+**Phase 1: Pre-Claude Code Measurement**
+- Track existing development metrics from your Git/PM tools
+- Establish statistical baselines with confidence intervals
+- Document current development workflows and pain points
+- Measure sample sizes: Minimum 20 PRs per developer for statistical significance
+
+**Phase 2: Implementation Period**
+- Deploy Claude Code with telemetry enabled
+- Maintain existing workflow documentation
+- Track adoption rates and initial usage patterns
+
+**Phase 3: Post-Implementation Analysis (30+ days)**
+- Compare same metrics with same statistical rigor
+- Account for external factors (holidays, releases, team changes)
+- Focus on trends over absolute numbers
 
 ```mermaid
 graph TD
-    A[Baseline Period] --> B[30 Days Without Claude Code]
-    B --> C[Implementation]
-    C --> D[30 Days With Claude Code]
-    D --> E[Compare Metrics]
-    E --> F[PR Velocity]
-    E --> G[Story Points Completed]
-    E --> H[Bug Fix Time]
+    A[Baseline Period<br/>30+ days] --> B[Implementation<br/>1-2 weeks]
+    B --> C[Measurement Period<br/>30+ days]
+    C --> D[Statistical Analysis]
+    D --> E[PR Velocity Change]
+    D --> F[Story Points Trend]
+    D --> G[Bug Resolution Time]
+    D --> H[Developer Satisfaction]
 ```
+
+#### Sample Size Guidelines
+- **Individual developer**: 20+ PRs per measurement period
+- **Team analysis**: 5+ active developers, 100+ total PRs
+- **Organizational**: Multiple teams, 500+ PRs for meaningful trends
+
 
 Based on Anthropic's research on [software development impact](https://www.anthropic.com/research/impact-software-development):
 - **79% of Claude Code conversations are automation tasks** (vs 49% on Claude.ai)
-- **35.8% are feedback loop interactions** - iterative development and debugging
+- **35.8% are feedback loop interactions** - iterative development and debugging  
 - **43.8% are directive conversations** - direct task completion
 - **JavaScript/TypeScript dominates usage** at 31% of queries, followed by HTML/CSS (28%) and Python (14%)
 
+**Important Note**: The metrics and examples in this guide are generated from limited sample data and hypothetical scenarios. Development workflows vary significantly across:
+- **Team practices**: Some teams prefer frequent small commits, others batch larger changes
+- **Project types**: Frontend development patterns differ from backend API work
+- **Developer experience**: Senior developers may use Claude for architecture review, while junior developers focus on implementation assistance
+- **Organizational culture**: Code review practices, testing requirements, and deployment processes all influence usage patterns
 
-Let your organization define what productivity means. Claude Code just provides the measurement tools.
+Your organization should define what productivity means in your context. Claude Code provides the measurement tools - the interpretation depends on your team's goals and workflows.
 
-## Understanding ROI
-
-Now that you have cost and productivity metrics, you can calculate ROI. We won't prescribe specific formulas - your organization knows your developer costs and productivity baselines better than anyone.
-
-### Key Metric Combinations
+### Key Telemetry Combinations for Analysis
 
 ```promql
 # Total cost for analysis period
@@ -275,48 +320,42 @@ sum(claude_code_cost_usage_USD_total)
 # Total tokens consumed by type
 sum(claude_code_token_usage_tokens_total) by (type)
 
-# Cost per user
+# Cost per user for budget allocation
 sum(claude_code_cost_usage_USD_total) by (user_email)
 
-# Average cost per session (when session metrics are available)
+# Average cost per session
 sum(claude_code_cost_usage_USD_total) / count(claude_code_cost_usage_USD_total)
+
+# Usage patterns by time of day
+sum(rate(claude_code_token_usage_tokens_total[1h])) by (hour)
 ```
 
-**Example results for ROI analysis (real data from 6 sessions):**
+**Example telemetry results (real data from 6 sessions):**
 ```promql
 # Total cost for analysis period: $0.43 across 6 sessions
 sum(claude_code_cost_usage_USD_total) = 0.43
 
-# Tokens by type: Shows massive cache usage value
+# Tokens by type: Shows cache efficiency
 {type="input"} 751
 {type="output"} 1863  
 {type="cacheCreation"} 2136
 {type="cacheRead"} 78465
 
 # Cost breakdown by model complexity
-{model="claude-opus-4-20250514"} 0.429  # Complex "ultrathink" queries
+{model="claude-opus-4-20250514"} 0.429
 {model="claude-3-5-haiku-20241022"} 0.0006  # Simple queries
 
 # Cache efficiency: 78k cache reads vs 2k cache creation (39:1 ratio)
 # Average cost per session: $0.43 / 6 = $0.072
 ```
-### ROI Calculation Flow
 
-```mermaid
-graph TD
-    A[Monthly Claude Code Cost] --> B[Developer Time Saved]
-    C[Developer Hourly Rate] --> B
-    B --> D[Calculate Value]
-    D --> E["ROI = (Value - Cost) / Cost"]
-    
-    F[Productivity Metrics] --> G[Hours Saved Estimation]
-    G --> B
-    
-    H[Before/After Comparison] --> I[Percent Improvement]
-    I --> G
-```
+Your actual usage patterns will depend on:
+- **Workflow complexity**: Simple bug fixes vs architectural reviews
+- **Developer preferences**: Some use "ultrathink" for complex analysis, others prefer iterative conversations
+- **Project phase**: Initial development vs maintenance vs refactoring work
+- **Team collaboration patterns**: Individual work vs pair programming with Claude
 
-Your organization can use these metrics to calculate ROI based on your developer costs and productivity baselines. The key is consistent measurement over time.
+Use this telemetry data as input for your organization's specific value assessment framework.
 
 ## Brownie Points: Automated Reporting
 
