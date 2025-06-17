@@ -307,12 +307,12 @@ graph TD
     A[Monthly Claude Code Cost] --> B[Developer Time Saved]
     C[Developer Hourly Rate] --> B
     B --> D[Calculate Value]
-    D --> E[ROI = (Value - Cost) / Cost]
+    D --> E["ROI = (Value - Cost) / Cost"]
     
     F[Productivity Metrics] --> G[Hours Saved Estimation]
     G --> B
     
-    H[Before/After Comparison] --> I[% Improvement]
+    H[Before/After Comparison] --> I[Percent Improvement]
     I --> G
 ```
 
