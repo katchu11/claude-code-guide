@@ -4,7 +4,7 @@ By: Kashyap Coimbatore Murali
 
 ## Executive summary
 
-Coding tools like Claude Code promise to attach jetpacks to developers, and the data backs it up. With 79% of Claude Code conversations being automation tasks, teams are seeing real productivity gains that go far beyond simple code completion. During the June 12th cloud outage, I realized how dependent I'd become on Claude Code - even for fixing simple apostrophe errors in convoluted cURL commands.
+Coding tools like Claude Code promise to attach jetpacks to developers, and the data backs it up. With [79% of Claude Code conversations being automation tasks](https://www.anthropic.com/research/impact-software-development), teams are seeing real productivity gains that go far beyond simple code completion. During the June 12th cloud outage, I realized how dependent I'd become on Claude Code - even for fixing simple apostrophe errors in convoluted cURL commands.
 
 Your team probably already understands the need for developer productivity tools. What you need now is telemetry to answer the important questions: Are developers actually using it? Which teams are getting the most value? What's our real cost per feature or bug fix?
 
@@ -19,6 +19,7 @@ Before diving into Prometheus, let's verify telemetry is working:
 ```bash
 export CLAUDE_CODE_ENABLE_TELEMETRY=1
 export OTEL_METRICS_EXPORTER=console
+export OTEL_METRIC_EXPORT_INTERVAL=1000 
 claude -p "hello world"
 ```
 
@@ -58,11 +59,7 @@ First, grab the configuration files:
 
 ```bash
 # Clone the configuration repo
-git clone https://github.com/your-org/claude-code-prometheus-config
-cd claude-code-prometheus-config
-
-# Or use the files in this repository
-cd prometheus-config
+git clone https://github.com/katchu11/claude-code-guide
 docker-compose up -d
 ```
 
@@ -89,6 +86,7 @@ Common infrastructure endpoints:
 - **Kubernetes**: `http://otel-collector.monitoring.svc.cluster.local:4317`
 - **AWS**: Your Application Load Balancer endpoint
 - **DataDog**: `https://otlp.datadoghq.com`
+- **Honeycomb**: `https://api.honeycomb.io:443`
 
 ### Key Prometheus Queries
 
@@ -97,39 +95,26 @@ Once data is flowing, these queries give you the insights you need:
 ```promql
 # Total cost across all sessions
 sum(claude_code_cost_usage_USD_total)
+{} 0.43
 
 # Token usage by type (input/output)
 sum(claude_code_token_usage_tokens_total) by (type)
-
-# Token usage by user email
-sum(claude_code_token_usage_tokens_total) by (user_email)
-
-# Cost by model type
-sum(claude_code_cost_usage_USD_total) by (model)
-
-# Rate of token consumption over time (requires multiple data points)
-rate(claude_code_token_usage_tokens_total[5m])
-```
-
-**Example query results (from real telemetry data across 6 sessions):**
-```promql
-# Query 1: sum(claude_code_cost_usage_USD_total)
-{} 0.43
-
-# Query 2: sum(claude_code_token_usage_tokens_total) by (type)
 {type="input"} 751
 {type="output"} 1863
 {type="cacheCreation"} 2136
 {type="cacheRead"} 78465
 
-# Query 3: sum(claude_code_token_usage_tokens_total) by (user_email)  
+# Token usage by user email
+sum(claude_code_token_usage_tokens_total) by (user_email)  
 {user_email="user@company.com"} 83215
 
-# Query 4: sum(claude_code_cost_usage_USD_total) by (model)
+# Cost by model type
+sum(claude_code_cost_usage_USD_total) by (model)
 {model="claude-opus-4-20250514"} 0.429
 {model="claude-3-5-haiku-20241022"} 0.0006
 
-# Query 5: rate(claude_code_token_usage_tokens_total[5m])
+# Rate of token consumption over time (requires multiple data points)
+rate(claude_code_token_usage_tokens_total[5m])
 {type="input"} 2.5
 {type="output"} 6.2
 {type="cacheRead"} 261.5
@@ -154,9 +139,9 @@ The `claude_code.token.usage` metric breaks down by:
 **Usage Patterns by Plan Type:**
 
 **Subscription Users (Pro/Max):**
-- **Claude Pro**: ~45 prompts per 5-hour session, predictable $20/month
-- **Claude Max 5x**: ~225 prompts per 5-hour session, $100/month for heavy development
-- **Claude Max 20x**: ~900 prompts per 5-hour session, $200/month for intensive workflows
+- **Claude Pro**: predictable $20/month
+- **Claude Max 5x**: $100/month for heavy development
+- **Claude Max 20x**:$200/month for intensive workflows
 
 **API Users (Pay-per-token) - Real Usage Patterns:**
 
@@ -173,9 +158,9 @@ The `claude_code.token.usage` metric breaks down by:
 
 | Plan Type | Monthly Cost | Usage Limits | Best For |
 |-----------|--------------|--------------|----------|
-| **Claude Pro** | $20/month* | ~45 messages/5hrs | Individual developers, predictable cost |
-| **Claude Max 5x** | $100/month | ~225 messages/5hrs | Heavy users, 50-200 Claude Code prompts/5hrs |
-| **Claude Max 20x** | $200/month | ~900 messages/5hrs | Power users, 200-800 Claude Code prompts/5hrs |
+| **Claude Pro** | $20/month* | 1x | Individual developers, predictable cost |
+| **Claude Max 5x** | $100/month | 5x | Heavy users, 50-200 Claude Code prompts/5hrs |
+| **Claude Max 20x** | $200/month | 20x | Power users, 200-800 Claude Code prompts/5hrs |
 | **API Usage** | Variable by model | Pay-per-token | Custom integrations, batch processing |
 
 *Annual discounts may be available for subscription plans.
@@ -294,18 +279,29 @@ Your organization should define what productivity means in your context. Claude 
 ```promql
 # Total cost for analysis period
 sum(claude_code_cost_usage_USD_total)
+# Total cost for analysis period: $0.43 across 6 sessions
+sum(claude_code_cost_usage_USD_total) = 0.43
 
 # Total tokens consumed by type
 sum(claude_code_token_usage_tokens_total) by (type)
+{type="input"} 751
+{type="output"} 1863  
+{type="cacheCreation"} 2136
+{type="cacheRead"} 78465
 
 # Cost per user for budget allocation
 sum(claude_code_cost_usage_USD_total) by (user_email)
+# Cost breakdown by model complexity
+{model="claude-opus-4-20250514"} 0.429
+{model="claude-3-5-haiku-20241022"} 0.0006  # Simple queries
 
 # Average cost per session
 sum(claude_code_cost_usage_USD_total) / count(claude_code_cost_usage_USD_total)
+# Average cost per session: $0.43 / 6 = $0.072
 
 # Usage patterns by time of day
 sum(rate(claude_code_token_usage_tokens_total[1h])) by (hour)
+# Cache efficiency: 78k cache reads vs 2k cache creation (39:1 ratio)
 ```
 
 **Example telemetry results (real data from 6 sessions):**
