@@ -172,7 +172,7 @@ The `claude_code.token.usage` metric breaks down by:
 
 **Pro tip**: For regular Claude Code usage, Max subscriptions are often more predictable than API costs. Individual developers can't control API optimizations like prompt caching, making subscriptions simpler for daily development work.
 
-**Note**: Telemetry may require a clean Claude Code installation if you experience hanging. See [troubleshooting.md](troubleshooting.md) for solutions.
+**Note**: Telemetry may require a clean Claude Code installation if you experience hanging. See [troubleshooting.md](troubleshooting.md) for common issues or the [official Claude Code troubleshooting docs](https://docs.anthropic.com/en/docs/claude-code/troubleshooting).
 
 ![Grafana Multi-Panel Dashboard](screenshots/graphan_dashboard_cost_tokens_cost_per_user.png)
 *Grafana dashboard showing Claude Code cost by model, cost by user, and token usage metrics across multiple visualization panels* 

@@ -24,9 +24,9 @@ This repository contains a complete walkthrough for setting up telemetry, measur
 ## Contents
 
 - [`claude_code_roi_full.md`](claude_code_roi_full.md) - Complete implementation guide
-- [`prometheus-config/`](prometheus-config/) - Docker Compose setup for metrics collection
+- [`docker-compose.yml`](docker-compose.yml), [`prometheus.yml`](prometheus.yml), [`otel-collector-config.yaml`](otel-collector-config.yaml) - Docker Compose and metrics collection setup
 - [`sample-report-output.md`](sample-report-output.md) - Example automated reports
-- [`troubleshooting.md`](troubleshooting.md) - Common issues and solutions
+- [`report-generation-prompt.md`](report-generation-prompt.md) - Prompt template for generating productivity reports
 
 ## Getting Started
 
