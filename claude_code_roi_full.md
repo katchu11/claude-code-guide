@@ -225,40 +225,6 @@ While Claude Code provides specific telemetry, you can combine this with your ex
 - **Cost per PR**: Calculate by dividing total costs by PR count over time periods
 
 **Key insight**: The built-in metrics work best when combined with your existing Git and project management data.
-### Before/After Analysis Framework
-
-The most compelling productivity story comes from systematic before/after comparisons. Here's a practical framework:
-
-#### Baseline Establishment (30 days minimum)
-
-**Phase 1: Pre-Claude Code Measurement**
-- Track existing development metrics from your Git/PM tools
-- Establish statistical baselines with confidence intervals
-- Document current development workflows and pain points
-
-**Phase 2: Implementation Period**
-- Deploy Claude Code with telemetry enabled
-- Maintain existing workflow documentation
-- Track adoption rates and initial usage patterns
-
-**Phase 3: Post-Implementation Analysis (30+ days)**
-- Compare same metrics with same statistical rigor
-- Account for external factors (holidays, releases, team changes)
-- Focus on trends over absolute numbers
-
-```mermaid
-graph TD
-    A[Baseline Period<br/>30+ days] --> B[Implementation<br/>1-2 weeks]
-    B --> C[Measurement Period<br/>30+ days]
-    C --> D[Statistical Analysis]
-    D --> E[PR Velocity Change]
-    D --> F[Story Points Trend]
-    D --> G[Bug Resolution Time]
-    D --> H[Developer Satisfaction]
-```
-
-Keep in mind, that often it's best to keep it simple!
-
 
 Based on Anthropic's research on [software development impact](https://www.anthropic.com/research/impact-software-development):
 - **79% of Claude Code conversations are automation tasks** (vs 49% on Claude.ai)
@@ -274,54 +240,160 @@ Based on Anthropic's research on [software development impact](https://www.anthr
 
 Your organization should define what productivity means in your context. Claude Code provides the measurement tools - the interpretation depends on your team's goals and workflows.
 
-### Key Telemetry Combinations for Analysis
+### Answering Sample Business Questions with Telemetry
 
-```promql
-# Total cost for analysis period
-sum(claude_code_cost_usage_USD_total)
-# Total cost for analysis period: $0.43 across 6 sessions
-sum(claude_code_cost_usage_USD_total) = 0.43
+Here are a few common questions and how to answer them. These examples demonstrate the insights you can extract from Claude Code telemetry specific to your organization:
 
-# Total tokens consumed by type
-sum(claude_code_token_usage_tokens_total) by (type)
-{type="input"} 751
-{type="output"} 1863  
-{type="cacheCreation"} 2136
-{type="cacheRead"} 78465
-
-# Cost per user for budget allocation
-sum(claude_code_cost_usage_USD_total) by (user_email)
-# Cost breakdown by model complexity
-{model="claude-opus-4-20250514"} 0.429
-{model="claude-3-5-haiku-20241022"} 0.0006  # Simple queries
-
-# Average cost per session
-sum(claude_code_cost_usage_USD_total) / count(claude_code_cost_usage_USD_total)
-# Average cost per session: $0.43 / 6 = $0.072
-
-# Usage patterns by time of day
-sum(rate(claude_code_token_usage_tokens_total[1h])) by (hour)
-# Cache efficiency: 78k cache reads vs 2k cache creation (39:1 ratio)
+**Question 1: What's our ROI on Claude Code per developer?**
+```
+// Calculate cost-to-value ratio
+developerId = user.account_uuid
+totalCost = sum(claude_code.cost.usage) by (developerId)
+prCount = sum(claude_code.pull_request.count) by (developerId)
+commitCount = sum(claude_code.commit.count) by (developerId)
+linesAdded = sum(claude_code.lines_of_code.count{type="added"}) by (developerId)
+avgCostPerCommit = totalCost / commitCount
+avgCostPerLine = totalCost / linesAdded
 ```
 
-**Example telemetry results (real data from 6 sessions):**
-```promql
-# Total cost for analysis period: $0.43 across 6 sessions
-sum(claude_code_cost_usage_USD_total) = 0.43
-
-# Tokens by type: Shows cache efficiency
-{type="input"} 751
-{type="output"} 1863  
-{type="cacheCreation"} 2136
-{type="cacheRead"} 78465
-
-# Cost breakdown by model complexity
-{model="claude-opus-4-20250514"} 0.429
-{model="claude-3-5-haiku-20241022"} 0.0006  # Simple queries
-
-# Cache efficiency: 78k cache reads vs 2k cache creation (39:1 ratio)
-# Average cost per session: $0.43 / 6 = $0.072
+**Question 2: How does developer tenure correlate with effective Claude Code usage?**
 ```
+// Assuming you have developer tenure data available in your analytics platform
+// Calculate tool acceptance rates per developer
+acceptanceRates = sum(claude_code.code_edit_tool.decision{decision="accept"}) by (developerId) / 
+                 count(claude_code.code_edit_tool.decision) by (developerId)
+
+// Correlate with developer experience data
+// Experience categories: junior, mid, senior
+correlate(developerExperienceCategory, acceptanceRates)
+
+// Track progression over onboarding timeline
+timeSeriesAnalysis(acceptanceRates, timeWindow=90d, groupBy=experienceLevel)
+```
+
+**Question 3: Should we switch to subscription plans instead of pay-as-you-go?**
+```
+// Calculate total cost under current pay-as-you-go model
+currentMonthlyCost = sum(claude_code.cost.usage) over last_30d
+
+// Project costs for different subscription tiers
+// Claude Pro: $20/mo per user with 1x capacity
+// Claude Max 5x: $100/mo per user with 5x capacity
+// Claude Max 20x: $200/mo per user with 20x capacity
+activeUsers = count(distinct user.account_uuid) where claude_code.session.count > 0
+proTierCost = activeUsers * 20
+maxTier5xCost = activeUsers * 100
+maxTier20xCost = activeUsers * 200
+
+// Analyze typical usage patterns to determine capacity needs
+avgTokensPerUserPerMonth = sum(claude_code.token.usage) by (user.account_uuid) / activeUsers
+// Determine if users would hit subscription limits based on usage patterns
+usersExceedingProTier = count(users where avgTokensPerUserPerMonth > proTierLimit)
+
+// Calculate projected cost savings or additional expense
+subscriptionSavings = currentMonthlyCost - recommendedTierCost
+```
+
+**Question 4: Where are our developers getting stuck with Claude Code?**
+```
+// Detect problematic usage patterns
+problemPatterns = {
+  // Long sessions with no commits
+  longUnproductiveSessions = filter(
+    duration > 30min AND claude_code.commit.count == 0,
+    group by (developerId, sessionId)
+  ),
+  // High rejection rates
+  toolRejectionHotspots = filter(
+    claude_code.code_edit_tool.decision{decision="reject"} > 10,
+    group by (developerId, tool)
+  ),
+  // API errors
+  apiErrorPatterns = group by (error, model) {
+    count(claude_code.api_error)
+  }
+}
+```
+
+**Question 5: How does Claude Code impact our MTTR for bug fixes?**
+```
+// Join bug resolution data with Claude Code usage
+bugData = loadFromJira("bugs_resolved.csv")
+claudeUsageForBugs = filter(
+  claude_code.user_prompt contains "bug" OR 
+  claude_code.user_prompt contains "fix" OR
+  claude_code.session metadata.issue_id in bugData.issueIds,
+  group by (developerId, issue_id)
+)
+// Calculate MTTR with and without Claude assistance
+mttrWithClaude = avg(bugData.resolutionTime where bugData.issueId in claudeUsageForBugs.issue_id)
+mttrWithoutClaude = avg(bugData.resolutionTime where bugData.issueId not in claudeUsageForBugs.issue_id)
+improvementRatio = mttrWithoutClaude / mttrWithClaude
+```
+
+### Using Claude Haiku for Telemetry Analysis
+
+Claude Haiku can effectively analyze your telemetry data, particularly user prompts. Here's a technical implementation approach:
+
+```
+// Extract user prompt data from OpenTelemetry logs
+// Note: requires setting OTEL_LOG_USER_PROMPTS=1 to capture actual prompt content
+userPromptEvents = query {
+  from: claude_code.user_prompt
+  select: [user.account_uuid, prompt, prompt_length, event.timestamp]
+  where: event.timestamp >= now() - 30d
+}
+
+// Process batches of prompts through Claude Haiku
+function analyzePromptPatterns(prompts) {
+  // Structure the analysis request
+  const request = {
+    model: "claude-3-5-haiku-20241022",
+    messages: [{
+      role: "user",
+      content: `Analyze these developer prompts and identify:
+      1. Common task categories (debugging, feature development, refactoring, etc.)
+      2. Prompt quality patterns (specificity, context provided, clarity)
+      3. Developer skill indicators in the prompts
+      4. Recommended prompt improvements for better results
+      5. Areas where developers need additional training
+
+      Prompts to analyze:
+      ${JSON.stringify(prompts)}
+      
+      Format your response as structured JSON with the categories above.`
+    }]
+  };
+  
+  // Process through Haiku (low-cost analysis)
+  return callClaudeAPI(request);
+}
+
+// Categorize developers by usage patterns
+developerSegments = analyzePromptPatterns(userPromptEvents)
+  .groupBy(user.account_uuid)
+  .calculateMetrics([
+    "avgPromptQuality",
+    "dominantTaskCategory", 
+    "skillLevel",
+    "improvementAreas"
+  ]);
+
+// Generate customized training recommendations
+trainingRecommendations = developerSegments
+  .filter(segment => segment.improvementAreas.length > 0)
+  .map(segment => ({
+    userId: segment.user.account_uuid,
+    recommendations: segment.improvementAreas.map(area => trainingModules[area])
+  }));
+```
+
+This approach lets you cost-effectively analyze thousands of prompts using Haiku's lower pricing while extracting valuable insights to improve developer effectiveness.
+
+**Real-world telemetry snapshot:**
+- Total cost: $0.43 across 6 sessions (average $0.072 per session)
+- Cache efficiency ratio: 39:1 (78k cache reads vs 2k cache creation)
+- Model distribution: 99.9% Opus, 0.1% Haiku
 
 Your actual usage patterns will depend on:
 - **Workflow complexity**: Simple bug fixes vs architectural reviews
