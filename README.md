@@ -35,3 +35,5 @@ Read the complete guide in [`claude_code_roi_full.md`](claude_code_roi_full.md) 
 ## Contributing
 
 This guide is based on real-world implementation experience. If you have additional insights or improvements, please feel free to create an issue / PR.
+
+This guide was written by [Kashyap Coimbatore Murali](https://www.linkedin.com/in/kashyap-murali/)
